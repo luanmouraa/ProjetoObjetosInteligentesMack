@@ -1,0 +1,48 @@
+#include "EspMQTTClient.h"
+#include "DHTesp.h"
+
+EspMQTTClient client(
+  "Wokwi-GUEST",         // SSID WiFi
+  "",                    // Password WiFi
+  //"test.mosquitto.org",  // MQTT Broker
+  "broker.hivemq.com",  // MQTT Broker
+  "mqtt-mack-pub-sub",          // Client
+  1883                   // MQTT port
+);
+
+const int DHT_PIN = 15;
+
+DHTesp dhtSensor;
+
+void setup()
+{
+  Serial.begin(115200);
+
+  dhtSensor.setup(DHT_PIN, DHTesp::DHT22);
+
+  client.enableDebuggingMessages(); // Enable debugging messages sent to serial output
+  //client.enableHTTPWebUpdater(); // Enable the web updater. User and password default to values of MQTTUsername and MQTTPassword. These can be overridded with enableHTTPWebUpdater("user", "password").
+  //client.enableOTA(); // Enable OTA (Over The Air) updates. Password defaults to MQTTPassword. Port is the default OTA port. Can be overridden with enableOTA("password", port).
+  client.enableLastWillMessage("TestClient/lastwill", "Vou ficar offline");
+}
+
+
+void onConnectionEstablished()
+{
+  // Subscribe no "topicowokwi/msgRecebida/#" e mostra a mensagem recebida na Serial
+    client.subscribe("TESTMACK1165744/#", [](const String & topic, const String & payload) {
+    Serial.println("Mensagem recebida no topico: " + topic + ", payload: " + payload);
+  });
+}
+
+void loop()
+{
+  client.loop();
+  TempAndHumidity data = dhtSensor.getTempAndHumidity();
+  Serial.println("Temperatura: " + String(data.temperature, 2) + "°C");
+  Serial.println("Umidade: " + String(data.humidity, 1) + "%");
+  //client.publish("mackenzie1165744/temperatura", String(data.temperature, 2) + "°C"); 
+  //client.publish("mackenzie1165744/umidade", String(data.humidity, 1) + "%");
+  Serial.println("------------------------------------");
+  delay(500);
+}
